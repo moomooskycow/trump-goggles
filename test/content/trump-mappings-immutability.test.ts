@@ -457,6 +457,7 @@ describe('Trump Mappings Immutability', () => {
 
   describe('Performance benchmarks - frozen objects performance', () => {
     it('should maintain acceptable performance with frozen objects', () => {
+      let observedMappings = 0;
       const startTime = performance.now();
 
       // Simulate typical usage pattern (1000 iterations)
@@ -476,13 +477,16 @@ describe('Trump Mappings Immutability', () => {
         const nick = mapping.nick;
         const regex = mapping.regex;
 
-        // Prevent optimization eliminating operations
-        expect(nick).toBeDefined();
-        expect(regex).toBeDefined();
+        // Prevent optimization eliminating operations without timing test assertions.
+        if (nick && regex) {
+          observedMappings++;
+        }
       }
 
       const endTime = performance.now();
       const executionTime = endTime - startTime;
+
+      expect(observedMappings).toBe(1000);
 
       // Assert execution time is under 100ms threshold (CI environments are slower)
       expect(executionTime).toBeLessThan(100);
@@ -497,6 +501,7 @@ describe('Trump Mappings Immutability', () => {
         The meeting covered topics from MSNBC reporting to New York Times articles.
       `;
 
+      let changedTexts = 0;
       const startTime = performance.now();
 
       // Perform 1000 iterations of text replacement (simulates heavy usage)
@@ -508,18 +513,23 @@ describe('Trump Mappings Immutability', () => {
           processedText = processedText.replace(mapping.regex, mapping.nick);
         });
 
-        // Ensure processing actually occurred
-        expect(processedText).not.toBe(complexText);
+        if (processedText !== complexText) {
+          changedTexts++;
+        }
       }
 
       const endTime = performance.now();
       const executionTime = endTime - startTime;
+
+      // Ensure processing actually occurred without timing test assertions.
+      expect(changedTexts).toBe(1000);
 
       // Assert execution time is under 100ms threshold for complex operations (CI environments are slower)
       expect(executionTime).toBeLessThan(100);
     });
 
     it('should efficiently handle multiple API calls in rapid succession', () => {
+      let consistentReferences = 0;
       const startTime = performance.now();
 
       // Simulate rapid successive API calls (1000 iterations)
@@ -531,14 +541,16 @@ describe('Trump Mappings Immutability', () => {
         const mappings2 = window.TrumpMappings.getReplacementMap();
         const keys2 = window.TrumpMappings.getKeys();
 
-        // Verify these are still the same references (should be fast)
-        expect(mappings1).toBe(mappings2);
-        expect(keys1).toBe(keys2);
-        expect(mappings1).toBe(legacyMappings);
+        if (mappings1 === mappings2 && keys1 === keys2 && mappings1 === legacyMappings) {
+          consistentReferences++;
+        }
       }
 
       const endTime = performance.now();
       const executionTime = endTime - startTime;
+
+      // Verify these are still the same references without timing test assertions.
+      expect(consistentReferences).toBe(1000);
 
       // Assert execution time is under 100ms threshold for rapid API calls (CI environments are slower)
       expect(executionTime).toBeLessThan(100);
