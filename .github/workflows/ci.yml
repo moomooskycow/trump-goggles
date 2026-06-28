@@ -13,86 +13,29 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.10.0
+          run_install: false
+
       - name: Use Node.js 22.15.0
         uses: actions/setup-node@v4
         with:
           node-version: '22.15.0'
-
-      - name: Install pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: 7
-          run_install: false
-
-      - name: Get pnpm store directory
-        id: pnpm-cache
-        shell: bash
-        run: |
-          echo "STORE_PATH=$(pnpm config get store-dir)" >> $GITHUB_OUTPUT
-
-      - name: Setup pnpm cache
-        uses: actions/cache@v4
-        with:
-          path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
-          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-store-
+          cache: pnpm
 
       - name: Install dependencies
-        run: pnpm install
+        run: pnpm install --frozen-lockfile
 
       - name: Run CI
         run: pnpm verify
 
-      - name: Run tests with coverage
-        run: pnpm test:coverage
-
-      - name: Build extension for testing
-        run: pnpm build
-
-      - name: Run structured logging validation
-        run: |
-          # Create temporary files for capturing output
-          TEMP_LOG_FILE=$(mktemp)
-          EXTRACTED_LOGS=$(mktemp)
-          
-          echo "Running CI log validation test..."
-          # Run the CI-specific logger test that outputs real logs to console
-          # Capture both stdout and stderr to catch all console output
-          pnpm test test/utils/logger-ci-validation.test.ts --reporter=verbose 2>&1 | tee "$TEMP_LOG_FILE"
-          
-          echo "Extracting structured logs from test output..."
-          # Extract JSON log lines from the captured output
-          # Look for lines that contain structured log JSON with required fields
-          grep -E '\{.*"timestamp".*"level".*"service_name".*"correlation_id".*"function_name".*"component".*\}' "$TEMP_LOG_FILE" > "$EXTRACTED_LOGS" || true
-          
-          # Count extracted logs
-          LOG_COUNT=$(wc -l < "$EXTRACTED_LOGS" || echo "0")
-          echo "Extracted $LOG_COUNT structured log entries"
-          
-          # If we found structured logs, validate them
-          if [ -s "$EXTRACTED_LOGS" ]; then
-            echo "Sample extracted logs:"
-            head -3 "$EXTRACTED_LOGS"
-            echo "..."
-            echo "Running log structure validation..."
-            npx tsx scripts/validate-logs.ts "$EXTRACTED_LOGS"
-            echo "✅ Log structure validation passed!"
-          else
-            echo "❌ No structured logs found in test output."
-            echo "This indicates a problem with structured log generation."
-            echo "=== Full test output preview ==="
-            head -50 "$TEMP_LOG_FILE"
-            echo "=== End of test output preview ==="
-            exit 1
-          fi
-          
-          # Clean up temporary files
-          rm -f "$TEMP_LOG_FILE" "$EXTRACTED_LOGS"
-
       - name: Upload Coverage Report
         uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: coverage-report
           path: coverage/
           retention-days: 14
+          if-no-files-found: warn

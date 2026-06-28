@@ -16,7 +16,7 @@ jobs:
       - name: Check for npm/yarn usage
         run: |
           # Check for npm or yarn commands in changed files
-          git diff origin/master...HEAD --name-only | while read file; do
+          git diff origin/master...HEAD --name-only | while IFS= read -r file; do
             if [ -f "$file" ]; then
               if grep -q "npm install\|npm run\|yarn add\|yarn install\|yarn run" "$file"; then
                 echo "Error: Found npm or yarn commands in $file"
