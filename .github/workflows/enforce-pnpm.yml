@@ -6,7 +6,7 @@ on:
 
 jobs:
   check-package-manager:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, hetzner-ci, trump-goggles-ci]
     name: Enforce pnpm
 
     steps:

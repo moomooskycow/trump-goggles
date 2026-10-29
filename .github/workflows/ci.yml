@@ -8,7 +8,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, hetzner-ci, trump-goggles-ci]
 
     steps:
       - uses: actions/checkout@v4
